@@ -1,0 +1,19 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default permissions for BitDown desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "fs:allow-read-all",
+    "fs:allow-write-all",
+    "fs:allow-exists",
+    "shell:allow-open",
+    "notification:default",
+    "process:allow-exit",
+    "process:allow-restart"
+  ]
+}

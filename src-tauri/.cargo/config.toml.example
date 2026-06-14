@@ -1,0 +1,23 @@
+# ============================================================
+# src-tauri/.cargo/config.toml — MACHINE-SPECIFIC, DO NOT COMMIT
+# Copy this file to config.toml and adjust paths for your machine.
+# On Visual Studio 2022 with a clean rustup install you may NOT
+# need this file at all — Rust auto-detects VS 2022 toolchain.
+# ============================================================
+
+[target.x86_64-pc-windows-msvc]
+# Replace with the path to link.exe on YOUR machine
+linker = "C:\\Program Files\\Microsoft Visual Studio\\17\\Enterprise\\VC\\Tools\\MSVC\\<VERSION>\\bin\\Hostx64\\x64\\link.exe"
+
+[build]
+target = "x86_64-pc-windows-msvc"
+jobs = 8   # set to your CPU core count
+# Only needed if you have a conflicting rustc on PATH (e.g. Chocolatey):
+# rustc = "C:\\Users\\<YOU>\\.rustup\\toolchains\\stable-x86_64-pc-windows-msvc\\bin\\rustc.exe"
+
+[env]
+# Only needed if cc-rs cannot auto-detect your MSVC install.
+# CC  = "C:\\Program Files\\Microsoft Visual Studio\\17\\...\\cl.exe"
+# CXX = "C:\\Program Files\\Microsoft Visual Studio\\17\\...\\cl.exe"
+# INCLUDE = "...\\include;...\\ucrt;..."
+# LIB = "...\\lib\\x64;..."

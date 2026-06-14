@@ -11,15 +11,28 @@ import type {
 export const addTorrentFile = (args: {
   path: string; save_path: string; paused: boolean;
   category?: string; label?: string; skip_hash_check?: boolean;
-}) => invoke<TorrentRecord>("add_torrent_file", args);
+}) => invoke<TorrentRecord>("add_torrent_file", {
+  path: args.path,
+  savePath: args.save_path,
+  paused: args.paused,
+  category: args.category ?? null,
+  label: args.label ?? null,
+  skipHashCheck: args.skip_hash_check ?? false,
+});
 
 export const addTorrentMagnet = (args: {
   magnet: string; save_path: string; paused: boolean;
   category?: string; label?: string;
-}) => invoke<TorrentRecord>("add_torrent_magnet", args);
+}) => invoke<TorrentRecord>("add_torrent_magnet", {
+  magnet: args.magnet,
+  savePath: args.save_path,
+  paused: args.paused,
+  category: args.category ?? null,
+  label: args.label ?? null,
+});
 
 export const removeTorrent = (id: string, delete_files: boolean) =>
-  invoke<void>("remove_torrent", { id, delete_files });
+  invoke<void>("remove_torrent", { id, deleteFiles: delete_files });
 
 export const pauseTorrent = (id: string) => invoke<void>("pause_torrent", { id });
 export const resumeTorrent = (id: string) => invoke<void>("resume_torrent", { id });
@@ -39,7 +52,7 @@ export const getTorrentTrackers = (id: string) =>
   invoke<TrackerInfo[]>("get_torrent_trackers", { id });
 
 export const setFilePriority = (torrent_id: string, file_index: number, priority: number) =>
-  invoke<void>("set_file_priority", { torrent_id, file_index, priority });
+  invoke<void>("set_file_priority", { torrentId: torrent_id, fileIndex: file_index, priority });
 
 export const forceRecheck = (id: string) => invoke<void>("force_recheck", { id });
 
@@ -50,32 +63,32 @@ export const getTorrentPieceMap = (id: string) =>
   invoke<number[]>("get_torrent_piece_map", { id });
 
 export const getSpeedHistory = (torrent_id: string | null, seconds: number) =>
-  invoke<SpeedSample[]>("get_speed_history", { torrent_id, seconds });
+  invoke<SpeedSample[]>("get_speed_history", { torrentId: torrent_id, seconds });
 
 export const setTorrentLabel = (id: string, label: string | null) =>
   invoke<void>("set_torrent_label", { id, label });
 
 export const setDownloadLimit = (id: string, bytes_per_sec: number | null) =>
-  invoke<void>("set_download_limit", { id, bytes_per_sec });
+  invoke<void>("set_download_limit", { id, bytesPerSec: bytes_per_sec });
 
 export const setUploadLimit = (id: string, bytes_per_sec: number | null) =>
-  invoke<void>("set_upload_limit", { id, bytes_per_sec });
+  invoke<void>("set_upload_limit", { id, bytesPerSec: bytes_per_sec });
 
 // ─── Streaming commands ───────────────────────────────────────────────────────
 
 export const startStream = (torrent_id: string, file_index: number) =>
-  invoke<string>("start_stream", { torrent_id, file_index });
+  invoke<string>("start_stream", { torrentId: torrent_id, fileIndex: file_index });
 
 export const stopStream = (torrent_id: string) =>
-  invoke<void>("stop_stream", { torrent_id });
+  invoke<void>("stop_stream", { torrentId: torrent_id });
 
 export const getStreamUrl = (torrent_id: string, file_index: number, use_hls = false) =>
-  invoke<string>("get_stream_url", { torrent_id, file_index, use_hls });
+  invoke<string>("get_stream_url", { torrentId: torrent_id, fileIndex: file_index, useHls: use_hls });
 
 // ─── Metadata commands ────────────────────────────────────────────────────────
 
 export const fetchMetadata = (torrent_id: string) =>
-  invoke<MetadataRecord | null>("fetch_metadata", { torrent_id });
+  invoke<MetadataRecord | null>("fetch_metadata", { torrentId: torrent_id });
 
 export const searchTmdb = (query: string) =>
   invoke<TmdbSearchResult[]>("search_tmdb", { query });
@@ -84,10 +97,10 @@ export const getCachedMetadata = (id: string) =>
   invoke<MetadataRecord | null>("get_cached_metadata", { id });
 
 export const previewOrganize = (torrent_id: string, template: string) =>
-  invoke<[string, string][]>("preview_organize", { torrent_id, template });
+  invoke<[string, string][]>("preview_organize", { torrentId: torrent_id, template });
 
 export const autoOrganize = (torrent_id: string, template: string) =>
-  invoke<[string, string][]>("auto_organize", { torrent_id, template });
+  invoke<[string, string][]>("auto_organize", { torrentId: torrent_id, template });
 
 // ─── Privacy commands ─────────────────────────────────────────────────────────
 
@@ -113,7 +126,7 @@ export const testIpLeak = () => invoke<string[]>("test_ip_leak");
 // ─── RSS commands ─────────────────────────────────────────────────────────────
 
 export const addFeed = (name: string, url: string, interval_minutes: number) =>
-  invoke<RssFeed>("add_feed", { name, url, interval_minutes });
+  invoke<RssFeed>("add_feed", { name, url, intervalMinutes: interval_minutes });
 
 export const removeFeed = (id: string) => invoke<void>("remove_feed", { id });
 export const getFeeds = () => invoke<RssFeed[]>("get_feeds");
@@ -132,21 +145,21 @@ export const addFilterRule = (
   label?: string,
   quality_filter?: string,
 ) => invoke<RssFilterRule>("add_filter_rule", {
-  feed_id: feed_id ?? null, name, pattern,
-  exclude_pattern: exclude_pattern ?? null,
-  min_size: min_size ?? null,
-  max_size: max_size ?? null,
-  save_path: save_path ?? null,
+  feedId: feed_id ?? null, name, pattern,
+  excludePattern: exclude_pattern ?? null,
+  minSize: min_size ?? null,
+  maxSize: max_size ?? null,
+  savePath: save_path ?? null,
   category: category ?? null,
   label: label ?? null,
-  quality_filter: quality_filter ?? null,
+  qualityFilter: quality_filter ?? null,
 });
 
 export const removeFilterRule = (id: string) =>
   invoke<void>("remove_filter_rule", { id });
 
 export const getFilterRules = (feed_id?: string) =>
-  invoke<RssFilterRule[]>("get_filter_rules", { feed_id: feed_id ?? null });
+  invoke<RssFilterRule[]>("get_filter_rules", { feedId: feed_id ?? null });
 
 // ─── Settings commands ────────────────────────────────────────────────────────
 
