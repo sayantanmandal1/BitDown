@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── BitDown Glassmorphic Dark Theme ── */
+    /* Pure black/grey — no color accents */
+    --background: 0 0% 4%;        /* #0a0a0a near-black */
+    --foreground: 0 0% 92%;       /* bright white text */
+
+    --card: 0 0% 7%;              /* glass panel base */
+    --card-foreground: 0 0% 92%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 92%;
+
+    --primary: 0 0% 88%;          /* white/light grey for CTAs */
+    --primary-foreground: 0 0% 4%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 80%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 50%;
+
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 90%;
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 13%;
+    --input: 0 0% 11%;
+    --ring: 0 0% 65%;
+    --radius: 0.5rem;
+
+    /* Custom glass tokens */
+    --glass-bg: rgba(255, 255, 255, 0.04);
+    --glass-bg-hover: rgba(255, 255, 255, 0.07);
+    --glass-border: rgba(255, 255, 255, 0.07);
+    --glass-border-strong: rgba(255, 255, 255, 0.12);
+    --glass-blur: blur(20px);
+
+    /* Status colors — desaturated for monochrome feel */
+    --status-down: 210 60% 65%;    /* muted blue */
+    --status-seed: 142 40% 55%;    /* muted green */
+    --status-pause: 0 0% 45%;
+    --status-check: 45 60% 60%;
+    --status-error: 0 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.22); }
+}
+
+@layer components {
+  /* ── Glass card surface ── */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-strong {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border-strong);
+  }
+
+  /* ── Torrent row ── */
+  .torrent-row {
+    @apply border-b transition-colors duration-100 cursor-default;
+    border-color: rgba(255, 255, 255, 0.04);
+  }
+  .torrent-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .torrent-row.selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  /* ── Status left-border indicators ── */
+  .torrent-row.downloading {
+    border-left: 2px solid hsl(210, 60%, 65%);
+  }
+  .torrent-row.seeding {
+    border-left: 2px solid hsl(142, 40%, 55%);
+  }
+  .torrent-row.paused {
+    border-left: 2px solid rgba(255, 255, 255, 0.2);
+  }
+  .torrent-row.error {
+    border-left: 2px solid hsl(0, 60%, 55%);
+  }
+  .torrent-row.checking {
+    border-left: 2px solid hsl(45, 60%, 60%);
+  }
+
+  /* ── Speed value ── */
+  .speed-value {
+    @apply font-mono text-xs tabular-nums;
+  }
+
+  /* ── Panel divider / resize handle ── */
+  .panel-divider {
+    background: rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .panel-divider:hover { background: rgba(255, 255, 255, 0.15); }
+
+  /* ── Piece map canvas ── */
+  .piece-canvas {
+    @apply rounded;
+    image-rendering: pixelated;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  /* ── Sidebar nav button ── */
+  .nav-btn {
+    @apply w-full flex items-center justify-between px-3 py-1.5 rounded text-sm transition-colors;
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .nav-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .nav-btn.active {
+    background: rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* ── Input ── */
+  .inp {
+    @apply w-full rounded px-2.5 py-1.5 text-sm focus:outline-none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    transition: border-color 0.15s;
+  }
+  .inp:focus {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  /* ── Progress bar ── */
+  .progress-track {
+    @apply w-full rounded-full overflow-hidden;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .progress-fill-download {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(100,160,255,0.7), rgba(150,200,255,0.9));
+    border-radius: 9999px;
+    transition: width 0.4s;
+  }
+  .progress-fill-seed {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(80,200,130,0.7), rgba(120,230,160,0.9));
+    border-radius: 9999px;
+  }
+  .progress-fill-check {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(240,180,80,0.7), rgba(255,210,100,0.9));
+    border-radius: 9999px;
+  }
+  .progress-fill-pause {
+    height: 100%;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 9999px;
+  }
+
+  /* ── Glow badge ── */
+  .badge-down {
+    @apply px-1.5 py-0.5 rounded text-xs;
+    background: rgba(100, 160, 255, 0.12);
+    color: rgba(130, 185, 255, 0.95);
+    border: 1px solid rgba(100, 160, 255, 0.2);
+  }
+  .badge-seed {
+    @apply px-1.5 py-0.5 rounded text-xs;
+    background: rgba(80, 200, 130, 0.12);
+    color: rgba(100, 220, 150, 0.95);
+    border: 1px solid rgba(80, 200, 130, 0.2);
+  }
+  .badge-pause {
+    @apply px-1.5 py-0.5 rounded text-xs;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .badge-error {
+    @apply px-1.5 py-0.5 rounded text-xs;
+    background: rgba(255, 80, 80, 0.12);
+    color: rgba(255, 130, 130, 0.95);
+    border: 1px solid rgba(255, 80, 80, 0.2);
+  }
+  .badge-check {
+    @apply px-1.5 py-0.5 rounded text-xs;
+    background: rgba(240, 180, 80, 0.12);
+    color: rgba(255, 210, 110, 0.95);
+    border: 1px solid rgba(240, 180, 80, 0.2);
+  }
+}
+
