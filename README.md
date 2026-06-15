@@ -5,11 +5,11 @@
 
   **A high-performance BitTorrent client built with Tauri 2 + Rust + React**
 
-  [![Latest Release](https://img.shields.io/github/v/release/YOUR_GITHUB_USERNAME/bitdown?style=for-the-badge&color=0078D4&label=Download%20Installer)](https://github.com/YOUR_GITHUB_USERNAME/bitdown/releases/latest)
+  [![Latest Release](https://img.shields.io/github/v/release/sayantanmandal1/bitdown?style=for-the-badge&color=0078D4&label=Download%20Installer)](https://github.com/sayantanmandal1/bitdown/releases/latest)
   [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
-  [![Platform](https://img.shields.io/badge/platform-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/YOUR_GITHUB_USERNAME/bitdown/releases/latest)
+  [![Platform](https://img.shields.io/badge/platform-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/sayantanmandal1/bitdown/releases/latest)
 
-  ### [⬇ Download Latest Windows Installer](https://github.com/YOUR_GITHUB_USERNAME/bitdown/releases/latest)
+  ### [⬇ Download Latest Windows Installer](https://github.com/sayantanmandal1/bitdown/releases/latest)
 
   > Click the badge above or the link to go to the **Releases** page, then download the `.exe` setup file.
 </div>
@@ -47,7 +47,7 @@
 
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/YOUR_GITHUB_USERNAME/bitdown.git
+git clone https://github.com/sayantanmandal1/bitdown.git
 cd bitdown
 
 # 2. Install Node dependencies
