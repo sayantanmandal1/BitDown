@@ -317,8 +317,15 @@ export default function TorrentList({ onStream }: TorrentListProps) {
                 onStream(url, t?.record.name ?? "");
               }},
               null,
-              { label: "Remove (keep files)", action: () => api.removeTorrent(contextMenu.id, false), red: false },
-              { label: "Remove + delete files", action: () => api.removeTorrent(contextMenu.id, true), red: true },
+              { label: "Remove (keep files)", action: async () => {
+                // Optimistically remove from store then call backend
+                useTorrentStore.getState().setSelectedIds(new Set([contextMenu.id]));
+                await useTorrentStore.getState().removeSelected(false);
+              }, red: false },
+              { label: "Remove + delete files", action: async () => {
+                useTorrentStore.getState().setSelectedIds(new Set([contextMenu.id]));
+                await useTorrentStore.getState().removeSelected(true);
+              }, red: true },
             ].map((item, i) =>
               item === null ? (
                 <div key={i} className="my-1 border-t border-border" />

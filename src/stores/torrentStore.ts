@@ -85,8 +85,15 @@ export const useTorrentStore = create<TorrentStore>((set, get) => ({
 
   removeSelected: async (deleteFiles) => {
     const { selectedIds } = get();
-    await Promise.all([...selectedIds].map((id) => api.removeTorrent(id, deleteFiles)));
-    set({ selectedIds: new Set() });
+    const ids = [...selectedIds];
+    // Optimistically remove from UI immediately
+    set((state) => ({
+      torrents: state.torrents.filter((t) => !selectedIds.has(t.record.id)),
+      selectedIds: new Set(),
+    }));
+    // Then fire the backend calls (errors are silent — next poll will correct state)
+    await Promise.all(ids.map((id) => api.removeTorrent(id, deleteFiles)));
+    // Re-fetch to confirm final state
     get().fetchTorrents();
   },
 }));

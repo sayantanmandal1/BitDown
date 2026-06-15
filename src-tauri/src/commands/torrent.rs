@@ -1,4 +1,4 @@
-use tauri::State;
+use tauri::{State, Emitter};
 use sqlx::Row;
 use uuid::Uuid;
 
@@ -74,7 +74,10 @@ pub async fn remove_torrent(
     id: String,
     delete_files: bool,
 ) -> CmdResult<()> {
-    state.manager.remove_torrent(&id, delete_files).await.map_err(err)
+    state.manager.remove_torrent(&id, delete_files).await.map_err(err)?;
+    // Notify the frontend immediately so the row disappears without waiting for the next poll
+    let _ = state.app_handle.emit("torrent:removed", &id);
+    Ok(())
 }
 
 #[tauri::command]
@@ -132,12 +135,15 @@ pub async fn set_file_priority(
     state: State<'_, AppState>,
     torrent_id: String,
     file_index: usize,
-    priority: u8, // 0=skip, 1=low, 4=normal, 7=high
+    priority: u8, // 0 = skip, anything >0 = wanted
 ) -> CmdResult<()> {
-    // librqbit uses file inclusion; map 0 to excluded, >0 to included
-    // TODO: when librqbit exposes per-file priority, wire it here
-    let _ = state.manager.get_lt_id(&torrent_id).await;
-    Ok(())
+    let wanted = priority > 0;
+    // Update DB for persistence
+    // (stored as comma-separated skipped file indices in notes field for now)
+    state.manager
+        .set_file_wanted(&torrent_id, file_index, wanted)
+        .await
+        .map_err(err)
 }
 
 #[tauri::command]

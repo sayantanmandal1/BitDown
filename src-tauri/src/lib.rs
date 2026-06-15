@@ -20,6 +20,7 @@ pub struct AppState {
     pub db: Arc<Database>,
     pub streaming: Arc<StreamingServer>,
     pub remote: Arc<RemoteServer>,
+    pub app_handle: tauri::AppHandle,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -75,7 +76,7 @@ pub fn run() {
                         .expect("Failed to start remote server"),
                 );
 
-                let state = AppState { manager, db, streaming, remote };
+                let state = AppState { manager, db, streaming, remote, app_handle: app_handle.clone() };
                 app_handle.manage(state);
             });
 

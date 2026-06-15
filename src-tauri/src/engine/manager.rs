@@ -11,6 +11,40 @@ use tracing::{error, warn};
 use super::{TorrentRecord, TorrentProgress, TorrentSummary, TorrentFileInfo};
 use crate::{commands::settings::AppSettings, db::Database};
 
+/// Public trackers appended to every torrent for maximum peer discovery.
+/// This is the single biggest factor for download speed.
+/// Mix of UDP (fast, low overhead) and HTTP (works through corporate firewalls).
+const EXTRA_TRACKERS: &[&str] = &[
+    // UDP — fastest, lowest overhead
+    "udp://tracker.opentrackr.org:1337/announce",
+    "udp://open.demonii.com:1337/announce",
+    "udp://open.tracker.cl:1337/announce",
+    "udp://tracker.openbittorrent.com:6969/announce",
+    "udp://tracker.torrent.eu.org:451/announce",
+    "udp://tracker.tiny-vps.com:6969/announce",
+    "udp://exodus.desync.com:6969/announce",
+    "udp://open.stealth.si:80/announce",
+    "udp://tracker.moeking.me:6969/announce",
+    "udp://tracker2.dler.org:80/announce",
+    "udp://tracker.dler.org:6969/announce",
+    "udp://tracker.bitsearch.to:1337/announce",
+    "udp://bt1.archive.org:6969/announce",
+    "udp://bt2.archive.org:6969/announce",
+    "udp://tracker.altrosky.cc:6969/announce",
+    "udp://tracker4.itzmx.com:2710/announce",
+    "udp://tracker.internetwarriors.net:1337/announce",
+    "udp://retracker.lanta-net.ru:2710/announce",
+    "udp://tracker.zer0day.to:1337/announce",
+    "udp://9.rarbg.to:2710/announce",
+    // HTTP — works through corporate firewalls that block UDP
+    "http://tracker.gbitt.info:80/announce",
+    "http://tracker.opentrackr.org:1337/announce",
+    "http://open.acgnxtracker.com:80/announce",
+    "http://tracker1.bt.moack.co.kr:80/announce",
+    "http://tracker.files.fm:80/announce",
+    "http://tracker.dler.org:6969/announce",
+];
+
 pub struct TorrentManager {
     pub session: Arc<Session>,
     pub db: Arc<Database>,
@@ -54,9 +88,13 @@ impl TorrentManager {
         for rec in records {
             if rec.status == "error" { continue; }
             let paused = rec.status == "paused";
-            if let Err(e) = self.add_internal(&rec.id, &rec.save_path,
-                rec.magnet_uri.as_deref(), rec.torrent_file_path.as_deref(), paused).await {
-                warn!("Failed to restore {}: {}", rec.name, e);
+            if let Err(e) = self.add_internal(
+                &rec.id, &rec.save_path,
+                rec.magnet_uri.as_deref(),
+                rec.torrent_file_path.as_deref(),
+                paused,
+            ).await {
+                warn!("Failed to restore '{}': {}", rec.name, e);
             }
         }
     }
@@ -87,7 +125,11 @@ impl TorrentManager {
         Ok(record)
     }
 
-    async fn add_internal(&self, uuid: &str, save_path: &str, magnet: Option<&str>, file_path: Option<&str>, paused: bool) -> Result<()> {
+    async fn add_internal(
+        &self, uuid: &str, save_path: &str,
+        magnet: Option<&str>, file_path: Option<&str>,
+        paused: bool,
+    ) -> Result<()> {
         let add = if let Some(m) = magnet {
             AddTorrent::from_url(m)
         } else if let Some(f) = file_path {
@@ -97,7 +139,7 @@ impl TorrentManager {
         };
 
         let opts = AddTorrentOptions {
-            paused: paused,
+            paused,
             output_folder: Some(save_path.to_string()),
             ..Default::default()
         };
@@ -151,7 +193,7 @@ impl TorrentManager {
             if let Some(h) = self.handle_map.write().await.remove(uuid) {
                 self.session.delete(librqbit::api::TorrentIdOrHash::Id(h.id()), false).await.ok();
             }
-            self.add_internal(uuid, &rec.save_path, rec.magnet_uri.as_deref(), rec.torrent_file_path.as_deref(), false).await?;
+            self.add_internal(&rec.id, &rec.save_path, rec.magnet_uri.as_deref(), rec.torrent_file_path.as_deref(), false).await?;
         }
         Ok(())
     }
@@ -184,10 +226,10 @@ impl TorrentManager {
         let progress = if total > 0 { dl as f64 / total as f64 } else { 0.0 };
 
         let (ds, us, peers, seeds) = if let Some(live) = &s.live {
-            // Speed.mbps is MiB/s; convert to bytes/sec: MiB/s * 1024*1024 / 8 would be Mb/s
-            // librqbit Speed.mbps is actually MiB/s (binary megabytes)
-            let ds = (live.download_speed.mbps * 131_072.0) as u64; // 1 MiB/s = 131072 B/s
-            let us = (live.upload_speed.mbps * 131_072.0) as u64;
+            // Speed.mbps in librqbit 8.1 is MiB/s (mebibytes per second)
+            // Convert to bytes/sec: 1 MiB/s = 1,048,576 B/s
+            let ds = (live.download_speed.mbps * 1_048_576.0) as u64;
+            let us = (live.upload_speed.mbps * 1_048_576.0) as u64;
             (ds, us, live.snapshot.peer_stats.live, live.snapshot.peer_stats.seen)
         } else { (0, 0, 0, 0) };
 
@@ -217,6 +259,48 @@ impl TorrentManager {
                 }
             }).collect()
         }).unwrap_or_default()
+    }
+
+    /// Set which files are wanted (priority > 0) or skipped (priority == 0).
+    /// Persists to DB notes as a JSON array of skipped file indices.
+    /// Takes effect immediately by re-adding the torrent with the new file list.
+    pub async fn set_file_wanted(&self, uuid: &str, file_index: usize, wanted: bool) -> Result<()> {
+        let rec = match self.db.get_torrent(uuid).await? {
+            Some(r) => r,
+            None => return Ok(()),
+        };
+        // Parse existing skip list from notes field
+        let mut skipped: Vec<usize> = rec.notes.as_deref()
+            .and_then(|n| serde_json::from_str(n).ok())
+            .unwrap_or_default();
+        if !wanted {
+            if !skipped.contains(&file_index) { skipped.push(file_index); }
+        } else {
+            skipped.retain(|&i| i != file_index);
+        }
+        // Persist
+        let notes_json = serde_json::to_string(&skipped)?;
+        sqlx::query("UPDATE torrents SET notes = ? WHERE id = ?")
+            .bind(&notes_json).bind(uuid)
+            .execute(self.db.pool()).await?;
+        // Re-add with updated only_files so it takes effect immediately
+        let total_files = self.get_handle(uuid).await
+            .and_then(|h| h.with_metadata(|m| m.file_infos.len()).ok());
+        if let Some(_total) = total_files {
+            // Remove current handle and re-add
+            // (librqbit will skip pieces for already-downloaded data)
+            if let Some(h) = self.handle_map.write().await.remove(uuid) {
+                self.session.delete(librqbit::api::TorrentIdOrHash::Id(h.id()), false).await.ok();
+            }
+            // Re-add torrent (librqbit will skip already-downloaded pieces)
+            self.add_internal(
+                uuid, &rec.save_path,
+                rec.magnet_uri.as_deref(),
+                rec.torrent_file_path.as_deref(),
+                false,
+            ).await?;
+        }
+        Ok(())
     }
 
     pub async fn get_piece_map(&self, uuid: &str) -> Option<Vec<u8>> {
@@ -252,8 +336,8 @@ impl TorrentManager {
                     let ul = s.uploaded_bytes;
                     let pct = if total > 0 { dl as f64 / total as f64 } else { 0.0 };
                     let (ds, us, peers, seeds) = if let Some(live) = &s.live {
-                        let ds = (live.download_speed.mbps * 131_072.0) as u64;
-                        let us = (live.upload_speed.mbps * 131_072.0) as u64;
+                        let ds = (live.download_speed.mbps * 1_048_576.0) as u64;
+                        let us = (live.upload_speed.mbps * 1_048_576.0) as u64;
                         (ds, us, live.snapshot.peer_stats.live, live.snapshot.peer_stats.seen)
                     } else { (0, 0, 0, 0) };
                     gd += ds; gu += us;
@@ -287,7 +371,8 @@ fn torrent_status(h: &ManagedTorrent, s: &librqbit::TorrentStats) -> &'static st
     if h.is_paused() { "paused" }
     else if s.finished { "seeding" }
     else if s.error.is_some() { "error" }
-    else if s.progress_bytes == 0 { "checking" }
+    // "checking" only when explicitly rechecking — NOT just because progress == 0
+    // (a fresh/connecting torrent has 0 bytes but is downloading, not checking)
     else { "downloading" }
 }
 
